@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Nexus Dashboard</title>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入 Phosphor Icons 作为现代图标库 -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            /* 现代暗黑模式调色板 */
+            --bg-color: #0f1115;
+            --surface-color: rgba(25, 28, 36, 0.6);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --primary-color: #6366f1; /* 靛蓝 */
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --secondary-color: #10b981; /* 翠绿 */
+            --accent-color: #8b5cf6; /* 紫色 */
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            
+            --sidebar-width: 280px;
+            --font-family: 'Inter', sans-serif;
+            
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            /* 华丽的背景渐变光晕 */
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        /* 侧边栏 (Sidebar) - Glassmorphism */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--surface-border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 3rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            -webkit-text-fill-color: initial;
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            color: var(--primary-color);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05);
+        }
+
+        /* 主体内容区 (Main Content) */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* 顶部 Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title h1 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .page-title p {
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            padding: 0.5rem 1rem 0.5rem 0.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: border-color var(--transition-speed);
+        }
+
+        .user-profile:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* KPI 卡片组 */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .kpi-card {
+            background: var(--surface-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+        }
+
+        .kpi-card.blue::before { background: var(--primary-color); box-shadow: 0 0 10px var(--primary-glow); }
+        .kpi-card.green::before { background: var(--secondary-color); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+        .kpi-card.purple::before { background: var(--accent-color); box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .kpi-header i {
+            font-size: 1.25rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .kpi-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-trend {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .trend-up { color: var(--secondary-color); }
+        .trend-down { color: #ef4444; }
+
+        /* 图表与数据区域 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: var(--surface-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        /* 模拟的图表样式 */
+        .mock-chart {
+            width: 100%;
+            height: 250px;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 49px,
+                var(--surface-border) 50px
+            );
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding-top: 2rem;
+        }
+
+        .bar {
+            width: 8%;
+            background: linear-gradient(180deg, var(--primary-color) 0%, transparent 100%);
+            border-radius: 4px 4px 0 0;
+            opacity: 0.8;
+            transition: height 1s ease, opacity 0.3s;
+            cursor: pointer;
+            animation: growUp 1s ease-out forwards;
+            transform-origin: bottom;
+        }
+
+        .bar:hover { opacity: 1; }
+
+        @keyframes growUp {
+            from { transform: scaleY(0); }
+            to { transform: scaleY(1); }
+        }
+
+        /* 数据表格 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        .data-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .data-table tbody tr {
+            transition: background var(--transition-speed);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-idle {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 1024px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="ph-fill ph-planet"></i>
+            AI-Nexus
+        </div>
+        <ul class="nav-menu">
+            <a href="#" class="nav-item active"><i class="ph ph-squares-four"></i> 仪表盘 Overview</a>
+            <a href="#" class="nav-item"><i class="ph ph-chat-teardrop-text"></i> 活动会话 Sessions</a>
+            <a href="#" class="nav-item"><i class="ph ph-cpu"></i> 算力中心 Model Router</a>
+            <a href="#" class="nav-item"><i class="ph ph-coins"></i> 账单明细 Token Ledger</a>
+            <a href="#" class="nav-item"><i class="ph ph-plugs"></i> 渠道网关 Gateways</a>
+            <a href="skills.html" class="nav-item"><i class="ph ph-wrench"></i> 技能仓库 Skills</a>
+            <a href="#" class="nav-item"><i class="ph ph-gear"></i> 核心配置 Settings</a>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div class="page-title">
+                <h1>平台概览 Overview</h1>
+                <p>实时监控 AI-Nexus 多智能体协调网络的状态。</p>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+                    <span style="font-size: 0.9rem; font-weight: 500;">Admin</span>
+                    <i class="ph ph-caret-down" style="color: var(--text-secondary)"></i>
+                </div>
+            </div>
+        </header>
+
+        <section class="kpi-grid">
+            <div class="kpi-card blue">
+                <div class="kpi-header">
+                    <span>当前活跃会话 Active Sessions</span>
+                    <i class="ph ph-users" style="color: var(--primary-color)"></i>
+                </div>
+                <div class="kpi-value">1,248</div>
+                <div class="kpi-trend trend-up">
+                    <i class="ph-bold ph-trend-up"></i> +12.5% vs 上周
+                </div>
+            </div>
+
+            <div class="kpi-card purple">
+                <div class="kpi-header">
+                    <span>今日消耗 Total Tokens</span>
+                    <i class="ph ph-coin" style="color: var(--accent-color)"></i>
+                </div>
+                <div class="kpi-value">845.2K</div>
+                <div class="kpi-trend trend-up">
+                    <i class="ph-bold ph-trend-up"></i> +5.2% vs 昨日
+                </div>
+            </div>
+
+            <div class="kpi-card green">
+                <div class="kpi-header">
+                    <span>系统心跳 API Health</span>
+                    <i class="ph ph-heartbeat" style="color: var(--secondary-color)"></i>
+                </div>
+                <div class="kpi-value">99.98%</div>
+                <div class="kpi-trend trend-up">
+                    <i class="ph-bold ph-check"></i> 运行平稳
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-grid">
+            <!-- 流量图表区 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Token 消耗趋势 (近 7 天)</span>
+                    <i class="ph ph-dots-three-outline-vertical" style="color: var(--text-secondary); cursor: pointer;"></i>
+                </div>
+                <div class="mock-chart">
+                    <!-- 使用 CSS 动画模拟的柱状图 -->
+                    <div class="bar" style="height: 40%"></div>
+                    <div class="bar" style="height: 65%"></div>
+                    <div class="bar" style="height: 50%"></div>
+                    <div class="bar" style="height: 80%"></div>
+                    <div class="bar" style="height: 45%"></div>
+                    <div class="bar" style="height: 90%; background: linear-gradient(180deg, var(--accent-color) 0%, transparent 100%);"></div>
+                    <div class="bar" style="height: 75%"></div>
+                </div>
+            </div>
+
+            <!-- 实时日志区 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">网关实时节点</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Channel ID</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: 500"><i class="ph ph-telegram-logo" style="margin-right: 8px; color: #3b82f6;"></i>Telegram Bot</td>
+                            <td><span class="status-badge status-active">Active</span></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500"><i class="ph ph-slack-logo" style="margin-right: 8px; color: #e11d48;"></i>Slack App</td>
+                            <td><span class="status-badge status-idle">Idle</span></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 500"><i class="ph ph-browser" style="margin-right: 8px; color: #10b981;"></i>Web Widget</td>
+                            <td><span class="status-badge status-active">Active</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 简单的交互动画
+        document.querySelectorAll('.kpi-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                const icon = card.querySelector('.kpi-header i');
+                icon.style.transform = 'scale(1.2) rotate(5deg)';
+                icon.style.transition = 'all 0.3s ease';
+            });
+            card.addEventListener('mouseleave', () => {
+                const icon = card.querySelector('.kpi-header i');
+                icon.style.transform = 'scale(1) rotate(0deg)';
+            });
+        });
+    </script>
+</body>
+</html>

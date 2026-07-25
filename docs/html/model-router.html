@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Nexus - Model Router</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --surface-color: rgba(25, 28, 36, 0.6);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --primary-color: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --secondary-color: #10b981;
+            --accent-color: #8b5cf6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --sidebar-width: 280px;
+            --font-family: 'Inter', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--surface-border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 3rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            color: var(--primary-color);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05);
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title h1 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .page-title p {
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            padding: 0.5rem 1rem 0.5rem 0.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .model-card {
+            background: var(--surface-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform var(--transition-speed);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .model-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .model-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .model-title img {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+
+        .model-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .model-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .model-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--surface-border);
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .metric-value i {
+            font-size: 1rem;
+            vertical-align: middle;
+            margin-right: 4px;
+            color: var(--text-secondary);
+        }
+        
+        .action-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="ph-fill ph-planet"></i>
+            AI-Nexus
+        </div>
+        <ul class="nav-menu">
+            <a href="dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> 仪表盘 Overview</a>
+            <a href="sessions.html" class="nav-item"><i class="ph ph-chat-teardrop-text"></i> 活动会话 Sessions</a>
+            <a href="model-router.html" class="nav-item active"><i class="ph ph-cpu"></i> 算力中心 Model Router</a>
+            <a href="token-ledger.html" class="nav-item"><i class="ph ph-coins"></i> 账单明细 Token Ledger</a>
+            <a href="gateways.html" class="nav-item"><i class="ph ph-plugs"></i> 渠道网关 Gateways</a>
+            <a href="skills.html" class="nav-item"><i class="ph ph-wrench"></i> 技能仓库 Skills</a>
+            <a href="settings.html" class="nav-item"><i class="ph ph-gear"></i> 核心配置 Settings</a>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div class="page-title">
+                <h1>算力中心 Model Router</h1>
+                <p>配置和监控各底层大语言模型的路由分发及健康状态。</p>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+                    <span style="font-size: 0.9rem; font-weight: 500;">Admin</span>
+                    <i class="ph ph-caret-down" style="color: var(--text-secondary)"></i>
+                </div>
+            </div>
+        </header>
+
+        <section class="model-grid">
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-title">
+                        <i class="ph-fill ph-google-logo" style="color: #4285F4; font-size: 1.5rem;"></i>
+                        Gemini 1.5 Pro
+                    </div>
+                    <span class="model-status">Online</span>
+                </div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Avg Latency</span>
+                        <span class="metric-value"><i class="ph ph-timer"></i>1.2s</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Current RPM</span>
+                        <span class="metric-value"><i class="ph ph-activity"></i>145</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="btn-outline">配置权重</button>
+                </div>
+            </div>
+            
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-title">
+                        <i class="ph-fill ph-google-logo" style="color: #34A853; font-size: 1.5rem;"></i>
+                        Gemini 1.5 Flash
+                    </div>
+                    <span class="model-status">Online</span>
+                </div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Avg Latency</span>
+                        <span class="metric-value"><i class="ph ph-timer"></i>0.4s</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Current RPM</span>
+                        <span class="metric-value"><i class="ph ph-activity"></i>820</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="btn-outline">配置权重</button>
+                </div>
+            </div>
+
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-title">
+                        <i class="ph-fill ph-cube" style="color: #D97757; font-size: 1.5rem;"></i>
+                        Claude 3.5 Sonnet
+                    </div>
+                    <span class="model-status">Online</span>
+                </div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Avg Latency</span>
+                        <span class="metric-value"><i class="ph ph-timer"></i>1.5s</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Current RPM</span>
+                        <span class="metric-value"><i class="ph ph-activity"></i>42</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="btn-outline">配置权重</button>
+                </div>
+            </div>
+            
+            <div class="model-card" style="opacity: 0.7;">
+                <div class="model-header">
+                    <div class="model-title">
+                        <i class="ph-fill ph-openai-logo" style="color: #10a37f; font-size: 1.5rem;"></i>
+                        GPT-4o
+                    </div>
+                    <span class="model-status error">Rate Limited</span>
+                </div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Avg Latency</span>
+                        <span class="metric-value" style="color: #ef4444;"><i class="ph ph-timer"></i>>5.0s</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Current RPM</span>
+                        <span class="metric-value"><i class="ph ph-activity"></i>0</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="btn-outline">查看日志</button>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

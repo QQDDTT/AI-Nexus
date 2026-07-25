@@ -1,0 +1,21 @@
+system:
+  rpc_timeout_ms: 5000
+  server_port: 8000
+  dashboard_port: 3000
+  metrics_endpoint: "/metrics"
+  storage_path: "data/blocks"
+  default_agent_id: "agent_mvp_001"
+  default_admin_id: "local_admin_001"
+  meta_workspace: "src/ainexus-test/meta-workspace"
+
+compute:
+  max_inference_threads: 8
+  max_execution_workers: 4
+
+models:
+  global_gemini_model: "gemini-2.0-flash"
+  embedding_model: "gemini-embedding-2"
+  local_model_token_limit: 4096
+
+thermodynamics:
+  entropy_explosion_threshold: 10.0

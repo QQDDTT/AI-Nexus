@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Nexus - Gateways</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --surface-color: rgba(25, 28, 36, 0.6);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --primary-color: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --secondary-color: #10b981;
+            --accent-color: #8b5cf6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --sidebar-width: 280px;
+            --font-family: 'Inter', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--surface-border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 3rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            filter: drop-shadow(0 0 8px var(--primary-glow));
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            color: var(--primary-color);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05);
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title h1 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .page-title p {
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            padding: 0.5rem 1rem 0.5rem 0.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .gateway-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .gateway-card {
+            background: var(--surface-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gateway-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            background: var(--surface-border);
+        }
+
+        .gateway-card.active::before { background: var(--secondary-color); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+        .gateway-card.inactive::before { background: var(--text-secondary); }
+
+        .gateway-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gateway-name {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .gateway-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .gateway-card.active .gateway-status {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .gateway-card.inactive .gateway-status {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .gateway-info {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .gateway-info div {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: 1px solid var(--surface-border);
+            color: var(--text-primary);
+            padding: 0.5rem 0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all var(--transition-speed);
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="ph-fill ph-planet"></i>
+            AI-Nexus
+        </div>
+        <ul class="nav-menu">
+            <a href="dashboard.html" class="nav-item"><i class="ph ph-squares-four"></i> 仪表盘 Overview</a>
+            <a href="sessions.html" class="nav-item"><i class="ph ph-chat-teardrop-text"></i> 活动会话 Sessions</a>
+            <a href="model-router.html" class="nav-item"><i class="ph ph-cpu"></i> 算力中心 Model Router</a>
+            <a href="token-ledger.html" class="nav-item"><i class="ph ph-coins"></i> 账单明细 Token Ledger</a>
+            <a href="gateways.html" class="nav-item active"><i class="ph ph-plugs"></i> 渠道网关 Gateways</a>
+            <a href="skills.html" class="nav-item"><i class="ph ph-wrench"></i> 技能仓库 Skills</a>
+            <a href="settings.html" class="nav-item"><i class="ph ph-gear"></i> 核心配置 Settings</a>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div class="page-title">
+                <h1>渠道网关 Gateways</h1>
+                <p>管理各类即时通讯平台和外部应用接入节点的集成状态。</p>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+                    <span style="font-size: 0.9rem; font-weight: 500;">Admin</span>
+                    <i class="ph ph-caret-down" style="color: var(--text-secondary)"></i>
+                </div>
+            </div>
+        </header>
+
+        <section class="gateway-grid">
+            <div class="gateway-card active">
+                <div class="gateway-header">
+                    <div class="gateway-name">
+                        <div class="icon-box" style="color: #3b82f6;"><i class="ph-fill ph-telegram-logo"></i></div>
+                        Telegram Bot
+                    </div>
+                    <span class="gateway-status">Connected</span>
+                </div>
+                <div class="gateway-info">
+                    <div><span>Bot Username:</span> <span style="color: var(--text-primary)">@nexus_helper_bot</span></div>
+                    <div><span>Endpoint Hit:</span> <span style="color: var(--text-primary)">1,204 / hr</span></div>
+                </div>
+                <button class="toggle-btn" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">断开连接 Disconnect</button>
+            </div>
+
+            <div class="gateway-card inactive">
+                <div class="gateway-header">
+                    <div class="gateway-name">
+                        <div class="icon-box" style="color: #e11d48;"><i class="ph-fill ph-slack-logo"></i></div>
+                        Slack App
+                    </div>
+                    <span class="gateway-status">Disconnected</span>
+                </div>
+                <div class="gateway-info">
+                    <div><span>Workspace:</span> <span style="color: var(--text-primary)">N/A</span></div>
+                    <div><span>Endpoint Hit:</span> <span style="color: var(--text-primary)">0 / hr</span></div>
+                </div>
+                <button class="toggle-btn" style="color: var(--primary-color); border-color: var(--primary-glow);">连接 Connect</button>
+            </div>
+
+            <div class="gateway-card active">
+                <div class="gateway-header">
+                    <div class="gateway-name">
+                        <div class="icon-box" style="color: #10b981;"><i class="ph-fill ph-browser"></i></div>
+                        Web Widget
+                    </div>
+                    <span class="gateway-status">Connected</span>
+                </div>
+                <div class="gateway-info">
+                    <div><span>Domain:</span> <span style="color: var(--text-primary)">*.example.com</span></div>
+                    <div><span>Endpoint Hit:</span> <span style="color: var(--text-primary)">8,432 / hr</span></div>
+                </div>
+                <button class="toggle-btn">配置 Configure</button>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
