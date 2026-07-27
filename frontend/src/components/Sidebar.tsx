@@ -21,7 +21,7 @@ export default function Sidebar() {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     useEffect(() => {
-        document.documentElement.style.setProperty('--sidebar-width', isCollapsed ? '80px' : '280px');
+        document.documentElement.style.setProperty('--sidebar-width', isCollapsed ? '80px' : '320px');
     }, [isCollapsed]);
 
     return (

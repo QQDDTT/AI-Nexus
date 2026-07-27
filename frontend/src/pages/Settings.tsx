@@ -1,4 +1,5 @@
 import Header from '../components/Header';
+import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, HardDrives, Palette, User } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { fetchApi } from '../utils/auth';
@@ -15,9 +16,15 @@ interface SettingsDTO {
 }
 
 export default function Settings() {
+    const navigate = useNavigate();
     const [settings, setSettings] = useState<SettingsDTO | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
+
+    // Security tab password states
+    const [oldPass, setOldPass] = useState('');
+    const [newPass, setNewPass] = useState('');
+    const [confirmPass, setConfirmPass] = useState('');
     
     // Parse tab from URL
     const getInitialTab = (): 'profile' | 'system' | 'security' | 'ui' => {
@@ -30,6 +37,30 @@ export default function Settings() {
     };
     
     const [activeTab, setActiveTab] = useState<'profile' | 'system' | 'security' | 'ui'>(getInitialTab());
+
+    const handleUpdatePassword = () => {
+        if (!newPass) return alert('请输入新密码');
+        if (newPass !== confirmPass) return alert('两次输入的密码不一致');
+        fetchApi(API_ROUTES.SETTINGS, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...settings, admin_password: newPass })
+        }).then(res => {
+            if (res.ok) {
+                alert('密码已成功更新！');
+                setOldPass('');
+                setNewPass('');
+                setConfirmPass('');
+            } else {
+                alert('更新密码失败');
+            }
+        });
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
 
     // Update URL when tab changes without page reload
     useEffect(() => {
@@ -232,18 +263,36 @@ export default function Settings() {
                                 <h3>修改密码</h3>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>当前密码</label>
-                                    <input type="password" placeholder="请输入当前密码" style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--surface-border)', borderRadius: '8px', color: 'var(--text-primary)', outline: 'none' }} />
+                                    <input 
+                                        type="password" 
+                                        value={oldPass}
+                                        onChange={e => setOldPass(e.target.value)}
+                                        placeholder="请输入当前密码" 
+                                        style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--surface-border)', borderRadius: '8px', color: 'var(--text-primary)', outline: 'none' }} 
+                                    />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>新密码</label>
-                                    <input type="password" placeholder="请输入新密码" style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--surface-border)', borderRadius: '8px', color: 'var(--text-primary)', outline: 'none' }} />
+                                    <input 
+                                        type="password" 
+                                        value={newPass}
+                                        onChange={e => setNewPass(e.target.value)}
+                                        placeholder="请输入新密码" 
+                                        style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--surface-border)', borderRadius: '8px', color: 'var(--text-primary)', outline: 'none' }} 
+                                    />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>确认新密码</label>
-                                    <input type="password" placeholder="请再次输入新密码" style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--surface-border)', borderRadius: '8px', color: 'var(--text-primary)', outline: 'none' }} />
+                                    <input 
+                                        type="password" 
+                                        value={confirmPass}
+                                        onChange={e => setConfirmPass(e.target.value)}
+                                        placeholder="请再次输入新密码" 
+                                        style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--surface-border)', borderRadius: '8px', color: 'var(--text-primary)', outline: 'none' }} 
+                                    />
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                                    <button className="btn-outline">更新密码</button>
+                                    <button className="btn-outline" onClick={handleUpdatePassword}>更新密码</button>
                                 </div>
                             </div>
                             
@@ -256,7 +305,7 @@ export default function Settings() {
                                         <div style={{ fontWeight: 500, color: '#ef4444' }}>强制登出所有设备</div>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>吊销所有当前已签发的 JWT Token，并清空所有活动中的管理员会话。</div>
                                     </div>
-                                    <button className="btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }}>执行登出</button>
+                                    <button className="btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={handleLogout}>执行登出</button>
                                 </div>
                             </div>
                         </div>

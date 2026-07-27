@@ -31,24 +31,19 @@ impl AgentInstance {
     }
 
     /// 根据 Agent 的能力标签要求与 Model Router 配置解析具体的主/备用模型名称
-    pub fn resolve_target_model(&self, routing_map: Option<&serde_json::Value>) -> String {
-        let req = if self.capability_requirement.is_empty() {
+    pub fn resolve_target_model(
+        &self,
+        routing_map: Option<&serde_json::Value>,
+    ) -> Result<String, crate::gemini::router::ModelRouterError> {
+        let req_key = if self.capability_requirement.is_empty() {
             "Tier-1-Logic"
         } else {
             &self.capability_requirement
         };
 
-        if let Some(map) = routing_map {
-            if let Some(tier_cfg) = map.get(req) {
-                if let Some(primary) = tier_cfg.get("primary").and_then(|v| v.as_str()) {
-                    if !primary.is_empty() {
-                        return primary.to_string();
-                    }
-                }
-            }
-        }
-
-        "gemini-2.5-flash".to_string()
+        let task_type = crate::gemini::router::InferenceTaskType::from_key(req_key);
+        let router = crate::gemini::router::ModelRouter::new();
+        router.select_best_model(&task_type, None, routing_map)
     }
 
     /// 组装发送给 Gemini 的标准请求

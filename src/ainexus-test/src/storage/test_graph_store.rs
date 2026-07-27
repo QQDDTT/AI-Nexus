@@ -1,6 +1,5 @@
-use ai_nexus::storage::graph::{
-    GraphEdge, GraphNode, GraphStorage, NodeLabel, PetGraphStore,
-};
+use ai_nexus::core::interfaces::{GraphEdge, GraphNode, GraphStorage, NodeLabel};
+use ai_nexus::storage::graph::PetGraphStore;
 use tempfile::tempdir;
 
 /// 测试图谱节点写入与邻居查询

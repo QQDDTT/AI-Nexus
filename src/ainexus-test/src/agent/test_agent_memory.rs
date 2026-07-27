@@ -1,7 +1,7 @@
 use ai_nexus::agent::memory::InMemoryStore;
-use ai_nexus::core::interfaces::{ChatMessage, MemoryStore, MessageContent, EmbeddingProvider};
-use ai_nexus::core::interfaces::{GraphStorage, PetGraphStore};
-use ai_nexus::storage::vector::{ai_nexus::core::interfaces::VectorStore, Hnswai_nexus::core::interfaces::VectorStore};
+use ai_nexus::core::interfaces::{ChatMessage, MemoryStore, MessageContent, EmbeddingProvider, GraphStorage, VectorStore};
+use ai_nexus::storage::graph::PetGraphStore;
+use ai_nexus::storage::vector::HnswVectorStore;
 use ai_nexus::utils::errors::AiNexusError;
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -20,7 +20,7 @@ impl EmbeddingProvider for MockEmbeddingProvider {
 async fn test_short_term_folding() {
     let dir = tempdir().unwrap();
     let graph_store = Arc::new(PetGraphStore::new(dir.path().join("graph.bin")).unwrap()) as Arc<dyn GraphStorage>;
-    let vector_store = Arc::new(Hnswai_nexus::core::interfaces::VectorStore::new(dir.path().join("vec.bin")).unwrap()) as Arc<dyn crate::core::interfaces::ai_nexus::core::interfaces::VectorStore>;
+    let vector_store = Arc::new(HnswVectorStore::new(dir.path().join("vec.bin")).unwrap()) as Arc<dyn VectorStore>;
     let mut store = InMemoryStore::new(graph_store, vector_store, Arc::new(MockEmbeddingProvider));
     
     // 假设 1 token = 4 字符

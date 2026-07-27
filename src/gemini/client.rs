@@ -11,9 +11,15 @@ pub struct GeminiClient {
 
 impl GeminiClient {
     pub fn new(api_key: String) -> Self {
+        Self::new_with_url(api_key, None)
+    }
+
+    pub fn new_with_url(api_key: String, base_url: Option<String>) -> Self {
+        let default_url = "https://generativelanguage.googleapis.com/v1beta/models".to_string();
+        let target_url = base_url.filter(|u| !u.trim().is_empty()).unwrap_or(default_url);
         Self {
             api_key,
-            base_url: "https://generativelanguage.googleapis.com/v1beta/models".to_string(),
+            base_url: target_url,
             http_client: Client::builder()
                 .timeout(Duration::from_secs(60))
                 .build()

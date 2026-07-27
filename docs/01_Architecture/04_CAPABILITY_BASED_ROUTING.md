@@ -1,65 +1,80 @@
-# 基于能力标签的混合路由 (Capability-Based Hybrid Routing)
+# 基于算力 Profile 的动态任务路由 (Capability Profile-Based Routing)
 
 ## 1. 架构理念
 在多 Agent 的复杂生态系统中，直接将特定 Agent 绑定到具体的物理大模型（如 `gemini-2.5-pro` 或 `gpt-4o`）会导致系统极度脆弱。
 当模型 API 密钥耗尽、服务商宕机、或出现性价比更高的新模型时，硬编码的绑定关系将带来巨大的维护灾难。
 
-**混合路由架构** 的核心在于**解耦**：
-将“业务对算力的需求”与“实际的算力提供方”解耦，通过中间的“能力标签 (Capabilities)”进行撮合。
+AI-Nexus 采用了**算力 Profile 模式 (Capability Profile Mode)** 的路由架构：
+将“业务/推理任务的需求 (Inference Task Type)”与“底层的计算资源”进行彻底解耦，通过算力 Profile 聚合多任务类型关联、容灾节点链与高级分流规则，实现统一的高可用调度。
 
-## 2. 角色分工
+---
 
-### 2.1 Agent 层 (消费者)
-Agent 的定义 (在 Agent Factory 中配置) 不再包含 `model_name` 字段。
-取而代之的是 `capability_requirement`（能力需求标签）。
-常见的标签定义：
-- `Tier-1-Logic` (最高级别的逻辑推理与代码生成能力)
-- `Tier-2-Balanced` (均衡的成本与性能，适用于常规任务)
-- `Tier-3-Fast` (极速响应，适用于闲聊或简单的文本提取)
-- `Multimodal-Vision` (多模态视觉处理能力)
+## 2. 核心角色与数据结构
 
-### 2.2 算力中心 / Model Router (调度者)
-全局统一定义“能力标签”到“物理模型”的映射规则池。
-- **Primary / Failover 路由**: `Tier-1-Logic` 的 Primary 可以是 `gemini-2.5-pro`，Failover 可以是 `gpt-4o`。
-- **额度与成本控制**: 监控全局 Token 开销，当 `Tier-1` 额度耗尽时，Model Router 有权全局降级路由，而无需修改任何底层 Agent 的配置。
+### 2.1 算力 Profile 结构 (`CapabilityProfile`)
+策略节点由单一规则升级为 `CapabilityProfile` 结构，单个 Profile 可同时绑定多个任务类型，并包含高级模型调度规则：
 
-## 3. 契约定义 (API Data Structures)
-
-### 3.1 Agent Payload
 ```json
 {
-  "id": "coder_agent_01",
-  "name": "Senior Coder",
-  "persona": { ... },
-  "capability_requirement": "Tier-1-Logic" // 替代原有的 model: "gemini-2.5-pro"
-}
-```
-
-### 3.2 Model Router 映射配置 (Routing Table)
-```json
-{
-  "Tier-1-Logic": {
-    "primary": "gemini-2.5-pro",
-    "failover": ["gpt-4o", "claude-3-5-sonnet"]
+  "High-Reasoning-Profile": {
+    "name": "深度智力与代码算力组",
+    "description": "适用于高逻辑、复杂代码分析与多步骤推理任务",
+    "task_types": ["Tier-1-Logic", "Code-Generation"],
+    "primary": "claude-3-5-sonnet",
+    "failover": ["gemini-2.5-pro", "gpt-4o"],
+    "routing_rules": {
+      "context_overflow_model": "gemini-1.5-pro",
+      "max_token_threshold": 32768,
+      "timeout_ms": 10000
+    }
   },
-  "Tier-3-Fast": {
+  "General-Balanced-Profile": {
+    "name": "通用对话与极速响应组",
+    "description": "适用于日常对话、低延迟回复与轻量结构化提取",
+    "task_types": ["Tier-2-Balanced", "Tier-3-Fast", "Structured-Output"],
     "primary": "gemini-2.5-flash",
-    "failover": ["llama-3-8b"]
+    "failover": ["llama-3-8b"],
+    "routing_rules": {
+      "context_overflow_model": "gemini-1.5-flash",
+      "max_token_threshold": 16384,
+      "timeout_ms": 5000
+    }
   }
 }
 ```
 
-## 4. 优势
-- **容灾能力**: 极速切换宕机节点。
-- **统一计费**: 在算力中心层面统一限流与成本审计。
-- **职责分离**: 业务侧专心定义 Agent 性格与提示词，运维侧专心调配算力资源。
+### 2.2 推理任务类型 (`InferenceTaskType`)
+系统内置并扩展了标准推理任务分类：
+- `Tier-1-Logic` / `Logic`: 深度逻辑推理与复杂解析
+- `Code-Generation` / `Code`: 代码编写、重构与 Review
+- `Tier-2-Balanced` / `Balanced`: 常规通用对话
+- `Tier-3-Fast` / `Fast`: 极速低延迟响应
+- `Multimodal-Vision` / `Vision`: 多模态视觉图像处理
+- `Structured-Output` / `Structured`: 强类型 JSON 与模式提取
 
-## 5. 服务商凭证池 (Providers Registry)
-为了彻底解耦底层环境变量，系统采用数据库动态管理 API Key 的机制。
+---
 
-### 5.1 数据结构
-提供商包含四个字段：`id`, `name`, `api_key`, `base_url`。
-后端存储时，`api_key` 为敏感数据。当向前端提供时，后端执行脱敏操作（如 `sk-****`）。
+## 3. 模型调度算法与错误处理规则
 
-### 5.2 API Key 读取逻辑
-当 Model Router 在路由到具体模型时，会实时查询凭证池中对应的 Provider，并使用明文 API Key 构造 HTTP 客户端。
+### 3.1 Profile 匹配与长文本分流逻辑
+当 Agent 或 API 发起推理请求时：
+1. **多任务 Profile 匹配**：`ModelRouter` 遍历路由表中的各个 `CapabilityProfile`，优先查找 `task_types` 数组包含当前任务类型的 Profile（或 key 相符）。
+2. **长文本 Token 溢出评估**：若传入预估 Token 长度 `estimated_tokens` 且配置了 `routing_rules.max_token_threshold`：
+   - 当 `estimated_tokens > max_token_threshold` 且配置了 `context_overflow_model` 时，系统自动将主模型切换重定向至该长文本专属模型（如 `gemini-1.5-pro`），并标记 `is_context_overflow = true`。
+
+### 3.2 严格无静默保底 (No Silent Fallback)
+为了防止隐式软失败掩盖策略缺失错误，系统**去除了静默保底降级逻辑**：
+- 当在传入配置和默认配置中均无法找到与目标任务相吻合的 Profile 或 Profile 配置无效时，`route_task` 将明确返回 `Err(ModelRouterError::NoMatchingRoute)`。
+- 在 REST API 处拦截该异常并响应 `HTTP 400 Bad Request`，以便开发运维及时定位缺失的算力组。
+
+---
+
+## 4. 服务商凭证池 (Providers Registry)
+
+系统通过 `NexusDb` 的 `providers` 集合动态统一管理 API Key。
+
+### 4.1 数据结构
+包含 `id`, `name`, `api_key`, `base_url` 4 个核心属性。向前端展示时自动掩码脱敏（如 `sk-****`）。
+
+### 4.2 密钥加载流
+当 `ModelRouter` 完成模型路由后，底层 `GeminiClient` 动态查询 `providers` 集合提取生效中的凭证并进行请求组装，彻底解耦环境变量。

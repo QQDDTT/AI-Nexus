@@ -69,17 +69,16 @@ AI-Nexus 自动化运行过程中的一切状态演变（技能上下线、心�
 
 **特别注意**：由于 AI-Nexus 的 Dashboard 平台提供了高度自由的 Channel（渠道，如 Telegram/Slack）配置与多租户管理能力，所有运行时的渠道名称 (name)、鉴权状态等**动态上下文严禁写入任何静态配置文件**，全部交由底座数据库管理。
 
-- **`.env` (环境与密钥池)**：**仅保存**系统的密钥数据（Secrets/API Keys）以及路径/网络端点数据（Paths/Endpoints）。严禁在其中配置任何业务逻辑参数。该文件不随代码版本控制 (Git) 提交。
-- **`ainexus.yaml` (规则与策略)**：**仅保存**模型名称 (Model Names)、性能参数 (Performance Parameters)、以及网络通信的 Port 和 Endpoint 等基础参数。用于定义系统的静态行为边界，不包含任何个人敏感密钥。该文件应随代码提交。
+- **`.env` (环境与基础设施配置)**：**仅保存**系统的基础设施路径/网络端点数据（Paths/Endpoints）。严禁在其中配置任何业务逻辑参数。*注：所有大模型 API Keys 均统一通过 NexusDb 的 `providers` 动态凭证池进行在线管理与加密脱敏，不再通过全局环境变量硬编码。*
 
 ---
 
 ## 2. `.env` 环境配置规范
 
-`.env` 是系统启动时的第一道基础设施配置，承载最核心的敏感数据。
+`.env` 是系统启动时的基础设施可选配置。
 
 ### 2.1 允许存放的数据类型
-1. **安全配置 (Security)**：如 `AINEXUS_ADMIN_PASSWORD` (管理员密码) 和 `DB_ENCRYPTION_KEY` (数据库加密主密钥)。*注：所有大模型 API Key 均已迁移至 NexusDb 动态凭证池中管理，不再通过全局环境变量硬编码。*
+1. **安全与本地环境 (Security & Local Env)**：如 `AINEXUS_ADMIN_PASSWORD` (管理员密码) 和 `DB_ENCRYPTION_KEY` (数据库加密主密钥)。
 2. **路径数据 (Path Data)**：如日志存放路径、`BLOCKSTORE_PATH` 等底层设施的挂载点。
 
 ### 2.2 绝对禁止存放的数据

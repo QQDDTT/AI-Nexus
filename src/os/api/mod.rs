@@ -1,4 +1,4 @@
-use crate::core::interfaces::{ProviderDef, PersonaDef, AgentDef, GatewayDef, TriggerDef, SettingsDef};
+use crate::core::interfaces::{ProviderDef, PersonaDef, GatewayDef, TriggerDef, SettingsDef};
 use axum::{
     extract::{FromRef, Path, State},
     http::{HeaderMap, StatusCode},
@@ -113,7 +113,7 @@ async fn get_stats(State(storage): State<Arc<crate::storage::Storage>>, headers:
         "total_tokens": total_tokens_str,
         "total_tokens_trend": "Recorded",
         "api_health": "100%",
-        "api_health_trend": "NexusDB Healthy",
+        "api_health_trend": "NexusDB Active",
         "gateways": gateways,
         "agents": real_agents,
         "skills_usage": skills_usage
@@ -258,6 +258,43 @@ async fn update_model_routing(State(db): State<Arc<NexusDb>>, headers: HeaderMap
     check_auth(&headers)?;
     db.insert("settings", "capability_routing", payload.clone()).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(json!({ "status": "updated", "routing": payload })))
+}
+
+#[derive(Deserialize)]
+struct ResolveRouteQuery {
+    task_type: Option<String>,
+    estimated_tokens: Option<usize>,
+}
+
+async fn resolve_model_route(
+    State(db): State<Arc<NexusDb>>,
+    headers: HeaderMap,
+    axum::extract::Query(query): axum::extract::Query<ResolveRouteQuery>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    check_auth(&headers).map_err(|status| (status, Json(json!({ "error": "Unauthorized" }))))?;
+    let raw_task = query.task_type.unwrap_or_else(|| "Tier-1-Logic".to_string());
+    let task_type = crate::gemini::router::InferenceTaskType::from_key(&raw_task);
+    let routing_map = db.collection("settings").get("capability_routing");
+    
+    let router = crate::gemini::router::ModelRouter::new();
+    match router.route_task(&task_type, query.estimated_tokens, routing_map.as_ref()) {
+        Ok(result) => Ok(Json(json!({
+            "profile_key": result.profile_key,
+            "task_type": raw_task,
+            "resolved_key": task_type.config_key(),
+            "primary": result.primary,
+            "failover": result.failover,
+            "is_context_overflow": result.is_context_overflow,
+            "routing_rules": result.routing_rules
+        }))),
+        Err(err) => Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "NoMatchingRoute",
+                "message": err.to_string()
+            })),
+        )),
+    }
 }
 
 async fn get_providers(State(db): State<Arc<NexusDb>>, headers: HeaderMap) -> Result<Json<Value>, StatusCode> {
@@ -714,6 +751,7 @@ pub async fn start_server(app_state: AppState) {
         .route("/api/sessions/:id", delete(delete_session))
         .route("/api/ledger", get(get_ledger))
         .route("/api/models/routing", get(get_model_routing).put(update_model_routing))
+        .route("/api/models/routing/resolve", get(resolve_model_route))
         .route("/api/models/providers", get(get_providers))
         .route("/api/models/providers", post(add_provider))
         .route("/api/models/providers/:id", delete(delete_provider))
@@ -732,7 +770,13 @@ pub async fn start_server(app_state: AppState) {
         .route("/api/triggers/:id", axum::routing::put(update_trigger).delete(delete_trigger))
         .with_state(app_state);
 
-    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = match TcpListener::bind("0.0.0.0:3000").await {
+        Ok(l) => l,
+        Err(_) => match TcpListener::bind("127.0.0.1:0").await {
+            Ok(l) => l,
+            Err(e) => panic!("Failed to bind any port for API server: {}", e),
+        },
+    };
     tracing::info!("Dashboard API listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
+    let _ = axum::serve(listener, app).await;
 }

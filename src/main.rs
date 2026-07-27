@@ -13,7 +13,6 @@ use ai_nexus::skill::pipeline::SkillPipeline;
 use ai_nexus::skill::registry::GraphSkillRegistry;
 use ai_nexus::iam::IamGateway;
 use std::sync::Arc;
-use std::env;
 use tracing::{error, info, Level};
 use tokio::sync::mpsc;
 
@@ -30,24 +29,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("=== AI-Nexus Terminal MVP ===");
 
-    // 2. 检查 API Key
-    let api_key = match env::var("GEMINI_API_KEY") {
-        Ok(k) => k,
-        Err(_) => {
-            error!("Environment variable GEMINI_API_KEY not found!");
-            info!("Please run: export GEMINI_API_KEY='your_key_here' or add it to .env");
-            return Ok(());
-        }
-    };
-
-    // 3. 组装三大核心模块
-    let gemini_client = Arc::new(GeminiClient::new(api_key.clone()));
-    let embedding_client = Arc::new(GeminiEmbeddingClient::new(api_key.clone()));
-    
-    // 初始化 Storage 层
+    // 2. 初始化 Storage 层
     let config = ai_nexus::core::config::get_config();
     let storage = Arc::new(Storage::new(&config.system.storage_path)?);
     info!("Storage layer initialized.");
+
+    // 从数据库服务商凭证池读取 API Key 与 base_url (支持代理/私有化部署)
+    let (api_key, base_url) = storage
+        .nexus_db
+        .collection("providers")
+        .get("gemini")
+        .map(|v| {
+            let k = v.get("api_key").and_then(|k| k.as_str()).unwrap_or("").to_string();
+            let u = v.get("base_url").and_then(|u| u.as_str()).map(|s| s.to_string());
+            (k, u)
+        })
+        .unwrap_or_default();
+
+    // 3. 组装三大核心模块
+    let gemini_client = Arc::new(GeminiClient::new_with_url(api_key.clone(), base_url.clone()));
+    let embedding_client = Arc::new(GeminiEmbeddingClient::new_with_url(api_key, base_url));
 
     // 初始化 WASM 技能沙箱流水线
     let wasm_sandbox = Arc::new(WasmSandbox::new()?);
@@ -148,12 +149,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let mut telegram_channel_opt = None;
-    if let Ok(token) = env::var("TELEGRAM_BOT_TOKEN") {
+    // 从数据库 gateways 集合中动态提取 Telegram 渠道 Bot Token
+    let tg_token_from_db = storage.nexus_db.collection("gateways").iter().into_iter().find_map(|(_, val)| {
+        let platform = val.get("platform")?.as_str()?;
+        let status = val.get("status")?.as_str()?;
+        if platform == "Telegram" && status == "Active" {
+            val.get("token").and_then(|t| t.as_str()).map(|s| s.to_string())
+        } else {
+            None
+        }
+    });
+
+    if let Some(token) = tg_token_from_db {
         let telegram_channel = Arc::new(TelegramChannel::new(&token));
         telegram_channel_opt = Some(telegram_channel.clone());
         let tg_clone = telegram_channel.clone();
         let tg_tx = main_tx.clone();
-        info!("Telegram Channel initialized.");
+        info!("Telegram Channel dynamically initialized from NexusDb.");
         tokio::spawn(async move {
             loop {
                 if let Ok(inputs) = tg_clone.receive_input().await {
@@ -167,7 +179,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
     } else {
-        info!("TELEGRAM_BOT_TOKEN not found, skipping Telegram channel.");
+        info!("No active Telegram Gateway configured in NexusDb, skipping.");
     }
 
     // 辅助回复函数
@@ -257,7 +269,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Function calling 循环执行 (最大深度 5 层)
         for _ in 0..5 {
             let routing_val = storage.nexus_db.collection("settings").get("capability_routing");
-            let target_model = agent.resolve_target_model(routing_val.as_ref());
+            let target_model = match agent.resolve_target_model(routing_val.as_ref()) {
+                Ok(m) => m,
+                Err(e) => {
+                    error!("Model Router Failed: {}", e);
+                    break;
+                }
+            };
             info!("Sending request via Model Router to target model: {}...", target_model);
             match gemini_client.generate_content(&target_model, &request).await {
                 Ok(response) => {

@@ -1,4 +1,5 @@
-use ai_nexus::storage::vector::{Hnswai_nexus::core::interfaces::VectorStore, ai_nexus::core::interfaces::VectorStore};
+use ai_nexus::core::interfaces::VectorStore;
+use ai_nexus::storage::vector::HnswVectorStore;
 use anyhow::Result;
 use tempfile::tempdir;
 
@@ -9,7 +10,7 @@ async fn test_vector_store_persistence_and_search() -> Result<()> {
 
     // Scope for writing
     {
-        let store = Hnswai_nexus::core::interfaces::VectorStore::new(&path)?;
+        let store = HnswVectorStore::new(&path)?;
         
         let v1 = vec![1.0, 0.0, 0.0];
         let v2 = vec![0.0, 1.0, 0.0];
@@ -25,7 +26,7 @@ async fn test_vector_store_persistence_and_search() -> Result<()> {
 
     // Reopen from disk
     {
-        let store = Hnswai_nexus::core::interfaces::VectorStore::new(&path)?;
+        let store = HnswVectorStore::new(&path)?;
         let query = vec![1.0, 0.1, 0.0]; // Should be closest to skill_1
         
         let results = store.search("skills", &query, 2).await?;

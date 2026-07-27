@@ -51,14 +51,47 @@ fn default_agent_id() -> String { "agent_mvp_001".to_string() }
 fn default_admin_id() -> String { "local_admin_001".to_string() }
 fn default_meta_workspace() -> String { "src/ainexus-test/meta-workspace".to_string() }
 
+impl Default for AiNexusConfig {
+    fn default() -> Self {
+        Self {
+            system: SystemConfig {
+                rpc_timeout_ms: 5000,
+                server_port: 3000,
+                dashboard_port: 5173,
+                metrics_endpoint: "/metrics".to_string(),
+                storage_path: "data/blocks".to_string(),
+                default_agent_id: "agent_mvp_001".to_string(),
+                default_admin_id: "local_admin_001".to_string(),
+                meta_workspace: "src/ainexus-test/meta-workspace".to_string(),
+            },
+            compute: ComputeConfig {
+                max_inference_threads: 4,
+                max_execution_workers: 4,
+            },
+            models: ModelsConfig {
+                global_gemini_model: "gemini-2.5-flash".to_string(),
+                embedding_model: "text-embedding-004".to_string(),
+                local_model_token_limit: 8192,
+            },
+            thermodynamics: ThermodynamicsConfig {
+                entropy_explosion_threshold: 0.85,
+            },
+        }
+    }
+}
+
 lazy_static! {
     pub static ref GLOBAL_CONFIG: Arc<AiNexusConfig> = {
         let settings = config::Config::builder()
-            .add_source(config::File::with_name("ainexus"))
-            .build()
-            .expect("Failed to build config from ainexus.yaml");
+            .add_source(config::File::with_name("ainexus").required(false))
+            .add_source(config::File::with_name("../../ainexus").required(false))
+            .build();
 
-        Arc::new(settings.try_deserialize::<AiNexusConfig>().expect("Failed to parse ainexus.yaml"))
+        let cfg = match settings {
+            Ok(s) => s.try_deserialize::<AiNexusConfig>().unwrap_or_default(),
+            Err(_) => AiNexusConfig::default(),
+        };
+        Arc::new(cfg)
     };
 }
 

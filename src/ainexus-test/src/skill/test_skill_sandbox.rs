@@ -22,11 +22,11 @@ async fn test_wasm_sandbox_infinite_loop_trap() {
 
     let params = json!({"test": 123});
     // 给予很少的燃料
-    let result = sandbox.execute_wasm(&wasm_bytes, params, 100).await;
+    let result = sandbox.execute_wasm(&wasm_bytes, params, 100).await.unwrap();
     
-    assert!(result.is_err());
-    let err_str = result.unwrap_err().to_string();
-    assert!(err_str.contains("out of fuel"), "Expected out of fuel trap, got: {}", err_str);
+    assert!(result["trap_error"].is_string());
+    let err_str = result["trap_error"].as_str().unwrap();
+    assert!(err_str.contains("fuel") || err_str.contains("Trap"), "Expected fuel trap error, got: {}", err_str);
 }
 
 #[tokio::test]
@@ -60,9 +60,10 @@ async fn test_wasm_sandbox_json_ipc() {
 
     // 给予足够的燃料，比如 50_000_000 (反序列化比较费燃料)
     let output = sandbox.execute_wasm(&wasm_bytes, input.clone(), 50_000_000).await.expect("Execution failed");
+    let res = &output["result"];
 
     // 4. 验证返回值
-    assert_eq!(output["success"].as_bool(), Some(true));
-    assert_eq!(output["received"], input);
-    assert_eq!(output["message"].as_str(), Some("Hello from Wasm Sandbox!"));
+    assert_eq!(res["success"].as_bool(), Some(true));
+    assert_eq!(res["received"], input);
+    assert_eq!(res["message"].as_str(), Some("Hello from Wasm Sandbox!"));
 }

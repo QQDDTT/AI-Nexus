@@ -39,10 +39,16 @@ pub struct GeminiEmbeddingClient {
 
 impl GeminiEmbeddingClient {
     pub fn new(api_key: String) -> Self {
+        Self::new_with_url(api_key, None)
+    }
+
+    pub fn new_with_url(api_key: String, base_url: Option<String>) -> Self {
         let config = crate::core::config::get_config();
+        let default_url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:embedContent", config.models.embedding_model);
+        let target_url = base_url.filter(|u| !u.trim().is_empty()).unwrap_or(default_url);
         Self {
             api_key,
-            base_url: format!("https://generativelanguage.googleapis.com/v1beta/models/{}:embedContent", config.models.embedding_model),
+            base_url: target_url,
             http_client: Client::builder()
                 .timeout(Duration::from_secs(30))
                 .build()

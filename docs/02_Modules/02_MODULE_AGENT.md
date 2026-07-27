@@ -70,10 +70,14 @@ pub mod instance {
     }
     
     impl AgentInstance {
+        /// 根据能力要求与 Model Router 动态解析模型，匹配失败抛出 ModelRouterError
+        pub fn resolve_target_model(
+            &self,
+            routing_map: Option<&serde_json::Value>,
+        ) -> Result<String, crate::gemini::router::ModelRouterError>;
+
         /// 根据当前记忆和设定，生成最终给 Gemini Core 的标准请求
-        pub fn build_inference_request(&self, user_input: &str) -> crate::core::protocol::InferenceRequest {
-            // ...
-        }
+        pub async fn build_inference_request(&self, user_input: &str, max_tokens: usize) -> GenerateRequest;
     }
 }
 ```
